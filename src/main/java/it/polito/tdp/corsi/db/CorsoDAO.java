@@ -9,9 +9,34 @@ import java.util.*;
 
 
 import it.polito.tdp.corsi.model.Corso;
+import it.polito.tdp.corsi.model.Studente;
 
 public class CorsoDAO {
 
+	
+	public boolean esisteCorso(String codins) {
+		String sql="Select * from corso where codins=?";
+		
+		try {
+			Connection conn=ConnectionDB.getConnection();
+			PreparedStatement st= conn.prepareStatement(sql);
+			st.setString(1, codins);
+			ResultSet rs=st.executeQuery();
+			
+			conn.close();
+			
+		 if(rs.next()) {
+			 return true;
+		 }else {
+			 conn.close();
+			 return false;
+		 }
+			
+		} catch(SQLException e) {
+			throw new RuntimeException(e);
+			
+		}
+	}
 
 	public List<Corso> getCorsiPerPeriodo(Integer pd){
 		String sql="Select * from corso where pd=?";
@@ -61,4 +86,65 @@ public class CorsoDAO {
 		}
 		return result;
 	}
+	
+	
+	public List<Studente> getStudentiPerCorso(Corso corso){
+		
+		String sql="Select s.matricola, s.nome, s.cognome, s.CDS " + 
+				"from studente as s, iscrizione as i " + 
+				"where s.matricola=i.matricola and i.codins= ? ";
+		
+		List<Studente> result= new ArrayList<Studente>();
+		
+		
+		try {
+			Connection conn=ConnectionDB.getConnection();
+			PreparedStatement st= conn.prepareStatement(sql);
+			st.setString(1, corso.getCodins());
+			ResultSet rs=st.executeQuery();
+			
+			while(rs.next()) {
+				Studente s=new Studente(rs.getInt("matricola"),rs.getString("nome"),rs.getString("cognome"),rs.getString("CDS"));
+				result.add(s);
+			}
+			conn.close();
+			
+		} catch(SQLException e) {
+			throw new RuntimeException(e);
+			
+		}
+		return result;
+	}
+	
+	public Map<String, Integer> getDivisioneCDS(Corso c){
+		
+		String sql="Select s.CDS, COUNT(*) as tot " + 
+				"from studente as s, iscrizione as i " + 
+				"where s.matricola=i.matricola and s.cds<> \"\" and i.codins= ? " + 
+				"group by s.CDS";
+		
+		Map<String,Integer> result= new HashMap<String,Integer>();
+		
+		try {
+			Connection conn=ConnectionDB.getConnection();
+			PreparedStatement st= conn.prepareStatement(sql);
+			st.setString(1, c.getCodins());
+			ResultSet rs=st.executeQuery();
+			
+			while(rs.next()) {
+
+				Integer n=rs.getInt("tot");
+				result.put(rs.getString("CDS"),n);
+			}
+			conn.close();
+			
+		} catch(SQLException e) {
+			throw new RuntimeException(e);
+			
+		}
+		return result;
+	}
+	
+	
+	
 }
